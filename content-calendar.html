@@ -1,0 +1,939 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Social Media Content Calendar</title>
+<style>
+  :root {
+    --bg: #0f1117;
+    --surface: #1a1d27;
+    --surface2: #22263a;
+    --border: #2e3250;
+    --accent: #6c63ff;
+    --accent2: #ff6584;
+    --text: #e8eaf6;
+    --muted: #7b82b5;
+    --green: #43e97b;
+    --yellow: #f7971e;
+    --red: #f64f59;
+    --radius: 10px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+  }
+
+  /* ── Header ── */
+  header {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 16px 28px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+  header h1 { font-size: 1.3rem; font-weight: 700; letter-spacing: .5px; }
+  header h1 span { color: var(--accent); }
+
+  .header-controls { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+
+  .nav-btn {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 6px 14px;
+    border-radius: var(--radius);
+    cursor: pointer;
+    font-size: .85rem;
+    transition: background .15s;
+  }
+  .nav-btn:hover { background: var(--border); }
+
+  .month-label { font-weight: 600; min-width: 160px; text-align: center; font-size: 1rem; }
+
+  .view-toggle { display: flex; border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+  .view-btn {
+    background: none;
+    border: none;
+    color: var(--muted);
+    padding: 6px 14px;
+    cursor: pointer;
+    font-size: .82rem;
+    transition: background .15s, color .15s;
+  }
+  .view-btn.active { background: var(--accent); color: #fff; }
+
+  .add-btn {
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    padding: 8px 18px;
+    border-radius: var(--radius);
+    cursor: pointer;
+    font-size: .88rem;
+    font-weight: 600;
+    transition: opacity .15s;
+  }
+  .add-btn:hover { opacity: .85; }
+
+  /* ── Filter bar ── */
+  .filter-bar {
+    padding: 12px 28px;
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+  }
+  .filter-chip {
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: .78rem;
+    border: 1px solid var(--border);
+    cursor: pointer;
+    background: var(--surface2);
+    color: var(--muted);
+    transition: all .15s;
+  }
+  .filter-chip.active { color: #fff; border-color: transparent; }
+
+  /* ── Calendar grid ── */
+  #calendar-view { padding: 24px 28px; }
+
+  .cal-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 2px;
+  }
+
+  .cal-day-header {
+    text-align: center;
+    font-size: .72rem;
+    color: var(--muted);
+    font-weight: 700;
+    padding: 6px 0;
+    text-transform: uppercase;
+    letter-spacing: .5px;
+  }
+
+  .cal-cell {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    min-height: 110px;
+    padding: 6px;
+    cursor: pointer;
+    transition: border-color .15s;
+    position: relative;
+  }
+  .cal-cell:hover { border-color: var(--accent); }
+  .cal-cell.other-month { opacity: .35; }
+  .cal-cell.today { border-color: var(--accent); }
+  .cal-cell.today .day-num { background: var(--accent); color: #fff; }
+
+  .day-num {
+    font-size: .78rem;
+    font-weight: 700;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 4px;
+  }
+
+  .cal-post {
+    font-size: .68rem;
+    padding: 2px 5px;
+    border-radius: 4px;
+    margin-bottom: 2px;
+    cursor: pointer;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    color: #fff;
+    font-weight: 600;
+  }
+  .more-tag {
+    font-size: .65rem;
+    color: var(--muted);
+    padding: 2px 4px;
+    cursor: pointer;
+  }
+
+  /* ── List view ── */
+  #list-view { padding: 24px 28px; display: none; }
+
+  .list-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: .83rem;
+  }
+  .list-table th {
+    background: var(--surface2);
+    color: var(--muted);
+    font-size: .72rem;
+    text-transform: uppercase;
+    letter-spacing: .5px;
+    padding: 10px 12px;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+    position: sticky;
+    top: 0;
+  }
+  .list-table td {
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+  }
+  .list-table tr:hover td { background: var(--surface2); }
+
+  .platform-badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 20px;
+    font-size: .72rem;
+    font-weight: 700;
+    color: #fff;
+  }
+
+  .hl-dot {
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+  }
+
+  .action-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 3px 6px;
+    border-radius: 5px;
+    font-size: .85rem;
+    transition: background .15s;
+  }
+  .action-btn:hover { background: var(--border); }
+
+  .asset-link {
+    color: var(--accent);
+    text-decoration: none;
+    font-size: .78rem;
+  }
+  .asset-link:hover { text-decoration: underline; }
+
+  /* ── Modal ── */
+  .modal-backdrop {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,.6);
+    z-index: 100;
+    align-items: center;
+    justify-content: center;
+  }
+  .modal-backdrop.open { display: flex; }
+
+  .modal {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 28px;
+    width: min(620px, 95vw);
+    max-height: 90vh;
+    overflow-y: auto;
+    position: relative;
+  }
+
+  .modal h2 { font-size: 1.1rem; margin-bottom: 20px; }
+
+  .modal-close {
+    position: absolute;
+    top: 16px;
+    right: 18px;
+    background: none;
+    border: none;
+    color: var(--muted);
+    font-size: 1.3rem;
+    cursor: pointer;
+  }
+
+  .form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+  }
+  .form-group { display: flex; flex-direction: column; gap: 5px; }
+  .form-group.full { grid-column: 1/-1; }
+
+  label { font-size: .78rem; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: .4px; }
+
+  input, select, textarea {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    padding: 8px 10px;
+    font-size: .88rem;
+    font-family: inherit;
+    outline: none;
+    transition: border-color .15s;
+    width: 100%;
+  }
+  input:focus, select:focus, textarea:focus { border-color: var(--accent); }
+  textarea { resize: vertical; min-height: 70px; }
+
+  .color-row { display: flex; gap: 8px; flex-wrap: wrap; }
+  .color-swatch {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    cursor: pointer;
+    border: 3px solid transparent;
+    transition: border-color .15s;
+  }
+  .color-swatch.selected { border-color: #fff; }
+
+  .form-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px; }
+
+  .btn-save {
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    padding: 9px 22px;
+    border-radius: var(--radius);
+    cursor: pointer;
+    font-weight: 700;
+    font-size: .88rem;
+  }
+  .btn-cancel {
+    background: var(--surface2);
+    color: var(--muted);
+    border: 1px solid var(--border);
+    padding: 9px 18px;
+    border-radius: var(--radius);
+    cursor: pointer;
+    font-size: .88rem;
+  }
+
+  /* ── Detail modal ── */
+  .detail-row { display: flex; gap: 10px; margin-bottom: 12px; align-items: flex-start; }
+  .detail-label { min-width: 120px; font-size: .72rem; text-transform: uppercase; letter-spacing: .4px; color: var(--muted); font-weight: 700; padding-top: 2px; }
+  .detail-value { font-size: .88rem; flex: 1; }
+
+  /* ── Platform colors ── */
+  .p-instagram  { background: #e1306c; }
+  .p-facebook   { background: #1877f2; }
+  .p-twitter    { background: #1da1f2; }
+  .p-linkedin   { background: #0a66c2; }
+  .p-tiktok     { background: #ff0050; }
+  .p-youtube    { background: #ff0000; }
+  .p-pinterest  { background: #e60023; }
+  .p-threads    { background: #101010; }
+  .p-other      { background: #6c63ff; }
+
+  /* ── Highlight colors ── */
+  .hl-none    { background: #6c63ff; }
+  .hl-green   { background: #43e97b; }
+  .hl-yellow  { background: #f7971e; }
+  .hl-red     { background: #f64f59; }
+  .hl-blue    { background: #4facfe; }
+  .hl-purple  { background: #a18cd1; }
+  .hl-pink    { background: #ff6584; }
+
+  /* ── Empty state ── */
+  .empty-cell-tip { color: var(--border); font-size: .65rem; margin-top: 4px; }
+
+  /* responsive */
+  @media (max-width: 640px) {
+    .form-grid { grid-template-columns: 1fr; }
+    .cal-grid { gap: 1px; }
+    .cal-cell { min-height: 70px; }
+    header { padding: 12px 14px; }
+    #calendar-view, #list-view { padding: 14px; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Social <span>Content Calendar</span></h1>
+  <div class="header-controls">
+    <div style="display:flex;gap:6px;align-items:center;">
+      <button class="nav-btn" id="prevBtn">&#8249;</button>
+      <span class="month-label" id="monthLabel"></span>
+      <button class="nav-btn" id="nextBtn">&#8250;</button>
+      <button class="nav-btn" id="todayBtn">Today</button>
+    </div>
+    <div class="view-toggle">
+      <button class="view-btn active" id="calViewBtn">Calendar</button>
+      <button class="view-btn" id="listViewBtn">List</button>
+    </div>
+    <button class="add-btn" id="addBtn">+ Add Post</button>
+  </div>
+</header>
+
+<div class="filter-bar" id="filterBar">
+  <span style="font-size:.78rem;color:var(--muted);align-self:center;">Filter:</span>
+  <span class="filter-chip active" data-filter="all">All</span>
+  <span class="filter-chip" data-filter="instagram" style="--fc:#e1306c">Instagram</span>
+  <span class="filter-chip" data-filter="facebook" style="--fc:#1877f2">Facebook</span>
+  <span class="filter-chip" data-filter="twitter" style="--fc:#1da1f2">X / Twitter</span>
+  <span class="filter-chip" data-filter="linkedin" style="--fc:#0a66c2">LinkedIn</span>
+  <span class="filter-chip" data-filter="tiktok" style="--fc:#ff0050">TikTok</span>
+  <span class="filter-chip" data-filter="youtube" style="--fc:#ff0000">YouTube</span>
+  <span class="filter-chip" data-filter="pinterest" style="--fc:#e60023">Pinterest</span>
+  <span class="filter-chip" data-filter="threads" style="--fc:#101010">Threads</span>
+  <span class="filter-chip" data-filter="other" style="--fc:#6c63ff">Other</span>
+</div>
+
+<div id="calendar-view">
+  <div class="cal-grid" id="calGrid"></div>
+</div>
+
+<div id="list-view">
+  <table class="list-table">
+    <thead>
+      <tr>
+        <th>HL</th>
+        <th>Date</th>
+        <th>Time</th>
+        <th>Platform</th>
+        <th>Objective</th>
+        <th>Topic</th>
+        <th>CTA</th>
+        <th>Summary</th>
+        <th>Asset</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody id="listBody"></tbody>
+  </table>
+</div>
+
+<!-- Add / Edit Modal -->
+<div class="modal-backdrop" id="formModal">
+  <div class="modal">
+    <button class="modal-close" id="formClose">&#x2715;</button>
+    <h2 id="formTitle">New Post</h2>
+    <div class="form-grid">
+      <div class="form-group">
+        <label>Date</label>
+        <input type="date" id="fDate" />
+      </div>
+      <div class="form-group">
+        <label>Time</label>
+        <input type="time" id="fTime" />
+      </div>
+      <div class="form-group">
+        <label>Platform</label>
+        <select id="fPlatform">
+          <option value="instagram">Instagram</option>
+          <option value="facebook">Facebook</option>
+          <option value="twitter">X / Twitter</option>
+          <option value="linkedin">LinkedIn</option>
+          <option value="tiktok">TikTok</option>
+          <option value="youtube">YouTube</option>
+          <option value="pinterest">Pinterest</option>
+          <option value="threads">Threads</option>
+          <option value="other">Other</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Content Objective</label>
+        <select id="fObjective">
+          <option value="awareness">Brand Awareness</option>
+          <option value="engagement">Engagement</option>
+          <option value="conversion">Conversion</option>
+          <option value="retention">Retention</option>
+          <option value="education">Education</option>
+          <option value="entertainment">Entertainment</option>
+          <option value="promotion">Promotion</option>
+          <option value="ugc">UGC / Community</option>
+        </select>
+      </div>
+      <div class="form-group full">
+        <label>Topic</label>
+        <input type="text" id="fTopic" placeholder="e.g. Summer collection launch" />
+      </div>
+      <div class="form-group full">
+        <label>CTA (Call to Action)</label>
+        <input type="text" id="fCta" placeholder="e.g. Shop now, Learn more, DM us…" />
+      </div>
+      <div class="form-group full">
+        <label>Content Summary</label>
+        <textarea id="fSummary" placeholder="Brief description of the content…"></textarea>
+      </div>
+      <div class="form-group full">
+        <label>Asset Link (optional)</label>
+        <input type="url" id="fAsset" placeholder="https://drive.google.com/…" />
+      </div>
+      <div class="form-group full">
+        <label>Highlight Color</label>
+        <div class="color-row" id="colorRow">
+          <div class="color-swatch hl-none selected"  data-color="none"   title="Default"></div>
+          <div class="color-swatch hl-green"  data-color="green"  title="Green"></div>
+          <div class="color-swatch hl-yellow" data-color="yellow" title="Yellow"></div>
+          <div class="color-swatch hl-red"    data-color="red"    title="Red"></div>
+          <div class="color-swatch hl-blue"   data-color="blue"   title="Blue"></div>
+          <div class="color-swatch hl-purple" data-color="purple" title="Purple"></div>
+          <div class="color-swatch hl-pink"   data-color="pink"   title="Pink"></div>
+        </div>
+      </div>
+    </div>
+    <div class="form-actions">
+      <button class="btn-cancel" id="formCancel">Cancel</button>
+      <button class="btn-save" id="formSave">Save Post</button>
+    </div>
+  </div>
+</div>
+
+<!-- Detail Modal -->
+<div class="modal-backdrop" id="detailModal">
+  <div class="modal">
+    <button class="modal-close" id="detailClose">&#x2715;</button>
+    <h2 id="detailTitle" style="margin-bottom:18px;"></h2>
+    <div id="detailBody"></div>
+    <div class="form-actions" style="margin-top:16px;">
+      <button class="btn-cancel" id="detailDelete" style="color:var(--red);border-color:var(--red);">Delete</button>
+      <button class="btn-save" id="detailEdit">Edit</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ─── Data ────────────────────────────────────────────────────────────────────
+const STORAGE_KEY = 'smcc_posts_v1';
+
+function loadPosts() {
+  try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || []; }
+  catch { return []; }
+}
+function savePosts(posts) {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(posts));
+}
+
+let posts = loadPosts();
+let currentFilter = 'all';
+let currentView = 'calendar';
+let editingId = null;
+let selectedColor = 'none';
+let viewDate = new Date();
+
+// ─── Platform helpers ─────────────────────────────────────────────────────────
+const platformLabel = {
+  instagram:'Instagram', facebook:'Facebook', twitter:'X / Twitter',
+  linkedin:'LinkedIn', tiktok:'TikTok', youtube:'YouTube',
+  pinterest:'Pinterest', threads:'Threads', other:'Other'
+};
+const objectiveLabel = {
+  awareness:'Brand Awareness', engagement:'Engagement', conversion:'Conversion',
+  retention:'Retention', education:'Education', entertainment:'Entertainment',
+  promotion:'Promotion', ugc:'UGC / Community'
+};
+
+function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2); }
+
+// ─── Filter chips ─────────────────────────────────────────────────────────────
+document.querySelectorAll('.filter-chip').forEach(chip => {
+  const fc = chip.style.getPropertyValue('--fc');
+  if (fc) chip.style.background = 'transparent';
+  chip.addEventListener('click', () => {
+    document.querySelectorAll('.filter-chip').forEach(c => {
+      c.classList.remove('active');
+      c.style.background = 'var(--surface2)';
+      c.style.color = 'var(--muted)';
+      c.style.borderColor = 'var(--border)';
+    });
+    chip.classList.add('active');
+    const fc2 = chip.style.getPropertyValue('--fc');
+    if (fc2) {
+      chip.style.background = fc2;
+      chip.style.color = '#fff';
+      chip.style.borderColor = fc2;
+    } else {
+      chip.style.background = 'var(--accent)';
+      chip.style.color = '#fff';
+      chip.style.borderColor = 'var(--accent)';
+    }
+    currentFilter = chip.dataset.filter;
+    render();
+  });
+});
+
+// ─── View toggle ──────────────────────────────────────────────────────────────
+document.getElementById('calViewBtn').addEventListener('click', () => {
+  currentView = 'calendar';
+  document.getElementById('calViewBtn').classList.add('active');
+  document.getElementById('listViewBtn').classList.remove('active');
+  document.getElementById('calendar-view').style.display = '';
+  document.getElementById('list-view').style.display = 'none';
+  render();
+});
+document.getElementById('listViewBtn').addEventListener('click', () => {
+  currentView = 'list';
+  document.getElementById('listViewBtn').classList.add('active');
+  document.getElementById('calViewBtn').classList.remove('active');
+  document.getElementById('calendar-view').style.display = 'none';
+  document.getElementById('list-view').style.display = 'block';
+  render();
+});
+
+// ─── Nav ──────────────────────────────────────────────────────────────────────
+document.getElementById('prevBtn').addEventListener('click', () => {
+  viewDate.setMonth(viewDate.getMonth() - 1);
+  render();
+});
+document.getElementById('nextBtn').addEventListener('click', () => {
+  viewDate.setMonth(viewDate.getMonth() + 1);
+  render();
+});
+document.getElementById('todayBtn').addEventListener('click', () => {
+  viewDate = new Date();
+  render();
+});
+
+// ─── Render ───────────────────────────────────────────────────────────────────
+const DAYS = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+const MONTHS = ['January','February','March','April','May','June',
+                'July','August','September','October','November','December'];
+
+function filteredPosts() {
+  if (currentFilter === 'all') return posts;
+  return posts.filter(p => p.platform === currentFilter);
+}
+
+function render() {
+  document.getElementById('monthLabel').textContent =
+    MONTHS[viewDate.getMonth()] + ' ' + viewDate.getFullYear();
+  if (currentView === 'calendar') renderCalendar();
+  else renderList();
+}
+
+function renderCalendar() {
+  const grid = document.getElementById('calGrid');
+  grid.innerHTML = '';
+
+  DAYS.forEach(d => {
+    const h = document.createElement('div');
+    h.className = 'cal-day-header';
+    h.textContent = d;
+    grid.appendChild(h);
+  });
+
+  const year = viewDate.getFullYear();
+  const month = viewDate.getMonth();
+  const firstDay = new Date(year, month, 1).getDay();
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const daysInPrev = new Date(year, month, 0).getDate();
+  const today = new Date();
+
+  const cells = 42;
+  const fp = filteredPosts();
+
+  for (let i = 0; i < cells; i++) {
+    const cell = document.createElement('div');
+    cell.className = 'cal-cell';
+
+    let day, cellDate, isOther = false;
+    if (i < firstDay) {
+      day = daysInPrev - firstDay + i + 1;
+      cellDate = new Date(year, month - 1, day);
+      isOther = true;
+    } else if (i - firstDay >= daysInMonth) {
+      day = i - firstDay - daysInMonth + 1;
+      cellDate = new Date(year, month + 1, day);
+      isOther = true;
+    } else {
+      day = i - firstDay + 1;
+      cellDate = new Date(year, month, day);
+    }
+
+    if (isOther) cell.classList.add('other-month');
+    const isToday = cellDate.toDateString() === today.toDateString();
+    if (isToday) cell.classList.add('today');
+
+    const dayNum = document.createElement('div');
+    dayNum.className = 'day-num';
+    dayNum.textContent = day;
+    cell.appendChild(dayNum);
+
+    // Posts for this day
+    const dateStr = cellDate.toISOString().slice(0, 10);
+    const dayPosts = fp.filter(p => p.date === dateStr)
+      .sort((a, b) => (a.time || '').localeCompare(b.time || ''));
+
+    const max = 3;
+    dayPosts.slice(0, max).forEach(post => {
+      const tag = document.createElement('div');
+      tag.className = `cal-post p-${post.platform}`;
+      const t = post.time ? post.time.slice(0,5) + ' ' : '';
+      tag.textContent = t + post.topic;
+      tag.title = post.topic;
+      tag.addEventListener('click', e => { e.stopPropagation(); openDetail(post.id); });
+      cell.appendChild(tag);
+    });
+    if (dayPosts.length > max) {
+      const more = document.createElement('div');
+      more.className = 'more-tag';
+      more.textContent = `+${dayPosts.length - max} more`;
+      more.addEventListener('click', e => { e.stopPropagation(); });
+      cell.appendChild(more);
+    }
+
+    cell.addEventListener('click', () => openForm(null, dateStr));
+    grid.appendChild(cell);
+  }
+}
+
+function renderList() {
+  const tbody = document.getElementById('listBody');
+  tbody.innerHTML = '';
+
+  const fp = filteredPosts().slice().sort((a, b) => {
+    const da = (a.date || '') + (a.time || '');
+    const db = (b.date || '') + (b.time || '');
+    return da.localeCompare(db);
+  });
+
+  if (!fp.length) {
+    tbody.innerHTML = `<tr><td colspan="10" style="text-align:center;color:var(--muted);padding:40px;">No posts yet. Click <strong>+ Add Post</strong> to get started.</td></tr>`;
+    return;
+  }
+
+  fp.forEach(post => {
+    const tr = document.createElement('tr');
+
+    const hlClass = post.highlight && post.highlight !== 'none'
+      ? `hl-${post.highlight}` : 'hl-none';
+
+    tr.innerHTML = `
+      <td><span class="hl-dot ${hlClass}"></span></td>
+      <td>${formatDate(post.date)}</td>
+      <td style="white-space:nowrap">${post.time || '—'}</td>
+      <td><span class="platform-badge p-${post.platform}">${platformLabel[post.platform] || post.platform}</span></td>
+      <td>${objectiveLabel[post.objective] || post.objective || '—'}</td>
+      <td style="max-width:140px;word-break:break-word">${post.topic || '—'}</td>
+      <td style="max-width:120px;word-break:break-word">${post.cta || '—'}</td>
+      <td style="max-width:180px;color:var(--muted);word-break:break-word">${post.summary || '—'}</td>
+      <td>${post.asset ? `<a class="asset-link" href="${esc(post.asset)}" target="_blank" rel="noopener">Open ↗</a>` : '—'}</td>
+      <td style="white-space:nowrap">
+        <button class="action-btn" data-edit="${post.id}" title="Edit">✏️</button>
+        <button class="action-btn" data-del="${post.id}" title="Delete">🗑️</button>
+      </td>
+    `;
+    tbody.appendChild(tr);
+  });
+
+  tbody.querySelectorAll('[data-edit]').forEach(btn =>
+    btn.addEventListener('click', () => openForm(btn.dataset.edit)));
+  tbody.querySelectorAll('[data-del]').forEach(btn =>
+    btn.addEventListener('click', () => { if (confirm('Delete this post?')) deletePost(btn.dataset.del); }));
+}
+
+// ─── Form modal ───────────────────────────────────────────────────────────────
+document.getElementById('addBtn').addEventListener('click', () => openForm(null));
+document.getElementById('formClose').addEventListener('click', closeForm);
+document.getElementById('formCancel').addEventListener('click', closeForm);
+document.getElementById('formSave').addEventListener('click', saveForm);
+
+document.getElementById('colorRow').querySelectorAll('.color-swatch').forEach(sw => {
+  sw.addEventListener('click', () => {
+    document.querySelectorAll('.color-swatch').forEach(s => s.classList.remove('selected'));
+    sw.classList.add('selected');
+    selectedColor = sw.dataset.color;
+  });
+});
+
+function openForm(id, prefillDate) {
+  editingId = id || null;
+  selectedColor = 'none';
+
+  document.getElementById('formTitle').textContent = id ? 'Edit Post' : 'New Post';
+  document.querySelectorAll('.color-swatch').forEach(s => s.classList.remove('selected'));
+  document.querySelector('.color-swatch[data-color="none"]').classList.add('selected');
+
+  if (id) {
+    const post = posts.find(p => p.id === id);
+    if (!post) return;
+    document.getElementById('fDate').value = post.date || '';
+    document.getElementById('fTime').value = post.time || '';
+    document.getElementById('fPlatform').value = post.platform || 'instagram';
+    document.getElementById('fObjective').value = post.objective || 'awareness';
+    document.getElementById('fTopic').value = post.topic || '';
+    document.getElementById('fCta').value = post.cta || '';
+    document.getElementById('fSummary').value = post.summary || '';
+    document.getElementById('fAsset').value = post.asset || '';
+    selectedColor = post.highlight || 'none';
+    const sw = document.querySelector(`.color-swatch[data-color="${selectedColor}"]`);
+    if (sw) { document.querySelectorAll('.color-swatch').forEach(s => s.classList.remove('selected')); sw.classList.add('selected'); }
+  } else {
+    document.getElementById('fDate').value = prefillDate || '';
+    document.getElementById('fTime').value = '';
+    document.getElementById('fPlatform').value = 'instagram';
+    document.getElementById('fObjective').value = 'awareness';
+    document.getElementById('fTopic').value = '';
+    document.getElementById('fCta').value = '';
+    document.getElementById('fSummary').value = '';
+    document.getElementById('fAsset').value = '';
+  }
+
+  document.getElementById('formModal').classList.add('open');
+}
+
+function closeForm() {
+  document.getElementById('formModal').classList.remove('open');
+  editingId = null;
+}
+
+function saveForm() {
+  const date = document.getElementById('fDate').value;
+  const topic = document.getElementById('fTopic').value.trim();
+  if (!date) { alert('Please pick a date.'); return; }
+  if (!topic) { alert('Please enter a topic.'); return; }
+
+  const post = {
+    id: editingId || uid(),
+    date,
+    time: document.getElementById('fTime').value,
+    platform: document.getElementById('fPlatform').value,
+    objective: document.getElementById('fObjective').value,
+    topic,
+    cta: document.getElementById('fCta').value.trim(),
+    summary: document.getElementById('fSummary').value.trim(),
+    asset: document.getElementById('fAsset').value.trim(),
+    highlight: selectedColor,
+  };
+
+  if (editingId) {
+    posts = posts.map(p => p.id === editingId ? post : p);
+  } else {
+    posts.push(post);
+  }
+  savePosts(posts);
+  closeForm();
+  render();
+}
+
+// ─── Detail modal ─────────────────────────────────────────────────────────────
+let detailId = null;
+
+document.getElementById('detailClose').addEventListener('click', closeDetail);
+document.getElementById('detailEdit').addEventListener('click', () => {
+  closeDetail();
+  openForm(detailId);
+});
+document.getElementById('detailDelete').addEventListener('click', () => {
+  if (confirm('Delete this post?')) { deletePost(detailId); closeDetail(); }
+});
+
+function openDetail(id) {
+  const post = posts.find(p => p.id === id);
+  if (!post) return;
+  detailId = id;
+
+  const hlClass = post.highlight && post.highlight !== 'none' ? `hl-${post.highlight}` : 'hl-none';
+
+  document.getElementById('detailTitle').innerHTML =
+    `<span class="hl-dot ${hlClass}" style="margin-right:8px;"></span>${post.topic}`;
+
+  document.getElementById('detailBody').innerHTML = `
+    <div class="detail-row"><div class="detail-label">Platform</div>
+      <div class="detail-value"><span class="platform-badge p-${post.platform}">${platformLabel[post.platform]}</span></div></div>
+    <div class="detail-row"><div class="detail-label">Date & Time</div>
+      <div class="detail-value">${formatDate(post.date)}${post.time ? ' at ' + post.time : ''}</div></div>
+    <div class="detail-row"><div class="detail-label">Objective</div>
+      <div class="detail-value">${objectiveLabel[post.objective] || post.objective || '—'}</div></div>
+    <div class="detail-row"><div class="detail-label">CTA</div>
+      <div class="detail-value">${post.cta || '—'}</div></div>
+    <div class="detail-row"><div class="detail-label">Summary</div>
+      <div class="detail-value" style="color:var(--muted)">${post.summary || '—'}</div></div>
+    <div class="detail-row"><div class="detail-label">Asset</div>
+      <div class="detail-value">${post.asset
+        ? `<a class="asset-link" href="${esc(post.asset)}" target="_blank" rel="noopener">${post.asset}</a>`
+        : '—'}</div></div>
+  `;
+
+  document.getElementById('detailModal').classList.add('open');
+}
+
+function closeDetail() {
+  document.getElementById('detailModal').classList.remove('open');
+  detailId = null;
+}
+
+function deletePost(id) {
+  posts = posts.filter(p => p.id !== id);
+  savePosts(posts);
+  render();
+}
+
+// ─── Close modals on backdrop click ──────────────────────────────────────────
+document.getElementById('formModal').addEventListener('click', e => {
+  if (e.target === document.getElementById('formModal')) closeForm();
+});
+document.getElementById('detailModal').addEventListener('click', e => {
+  if (e.target === document.getElementById('detailModal')) closeDetail();
+});
+
+// ─── Utils ────────────────────────────────────────────────────────────────────
+function formatDate(str) {
+  if (!str) return '—';
+  const [y, m, d] = str.split('-');
+  return `${m}/${d}/${y}`;
+}
+function esc(s) {
+  return s.replace(/"/g, '&quot;');
+}
+
+// ─── Seed Sea Cadets posts if empty ───────────────────────────────────────────
+if (!posts.length) {
+  posts = [
+    { id: uid(), date: '2026-03-25', time: '17:06', platform: 'instagram', objective: 'retention',
+      topic: "Daniel's Story — Personal Transformation",
+      cta: 'Learn more about the program',
+      summary: "Daniel's journey: Sea Cadets bridged the gap between high school and a Marine Corps career. Personal transformation story video — highest engagement of recent posts (591 likes, 7,380 views).",
+      asset: 'https://www.instagram.com/p/DWUK0mjEY5R/', highlight: 'pink' },
+    { id: uid(), date: '2026-04-06', time: '16:38', platform: 'instagram', objective: 'engagement',
+      topic: 'Find Your People — Community',
+      cta: 'Find your people. Earn your place.',
+      summary: 'Short aspirational image post with a community-belonging message. Minimal copy, strong identity hook. #SeaCadets',
+      asset: 'https://www.instagram.com/p/DWzASFfEap5/', highlight: 'purple' },
+    { id: uid(), date: '2026-04-08', time: '13:07', platform: 'instagram', objective: 'awareness',
+      topic: 'Program Awareness — STEM, Aviation, Scuba & More',
+      cta: 'Visit seacadets.org to find a unit near you',
+      summary: 'Recruitment video highlighting the breadth of NSCC programs: STEM, aviation, scuba, emergency response. Encourages viewers to find a local unit.',
+      asset: 'https://www.instagram.com/p/DW3ybFwEdEz/', highlight: 'none' },
+    { id: uid(), date: '2026-04-08', time: '17:11', platform: 'instagram', objective: 'education',
+      topic: 'Resolve Maritime Academy Training — Carousel',
+      cta: 'Swipe to see their teamwork',
+      summary: '37 cadets in hands-on training at Resolve Maritime Academy: hose handling, firefighting, bunker gear, search & rescue drills. Multi-image carousel.',
+      asset: 'https://www.instagram.com/p/DW4OvPPFoJW/', highlight: 'yellow' },
+    { id: uid(), date: '2026-04-21', time: '15:26', platform: 'instagram', objective: 'ugc',
+      topic: 'National Volunteer Week — 344K Hours',
+      cta: 'Thank you 💙',
+      summary: '2,800+ volunteers gave 344,000+ hours of service in 2025, worth ~$12M. Recognition post for National Volunteer Week honoring mentors, leaders, and supporters.',
+      asset: 'https://www.instagram.com/p/DXZgcCzkV7h/', highlight: 'green' },
+    { id: uid(), date: '2026-04-22', time: '16:47', platform: 'instagram', objective: 'awareness',
+      topic: 'Anchorage Division Relaunch',
+      cta: 'Follow for updates',
+      summary: 'Relaunch of the MCPO Jerry Harrington Division in Anchorage, AK — serving youth grades 5–12. Named in honor of Master Chief Harrington\'s veteran community contributions.',
+      asset: 'https://www.instagram.com/p/DXcO6LrEfPg/', highlight: 'blue' },
+  ];
+  savePosts(posts);
+}
+
+// ─── Init ─────────────────────────────────────────────────────────────────────
+render();
+</script>
+</body>
+</html>
